@@ -1,16 +1,8 @@
+import { Track } from '@/helpers/types'
 import { useFavorites } from '@/store/library'
-import { useAudioPlayer } from 'expo-audio'
 import { useCallback } from 'react'
 
-type Track = {
-  url: string
-  // ... other fields like title, artist, rating
-}
-
-export const useTrackPlayerFavorite = (
-  player: ReturnType<typeof useAudioPlayer>,
-  activeTrack: Track | null
-) => {
+export const useTrackPlayerFavorite = (activeTrack: Track | null) => {
   const { favorites, toggleTrackFavorite } = useFavorites()
 
   const isFavorite = favorites.find((track) => track.url === activeTrack?.url)?.rating === 1

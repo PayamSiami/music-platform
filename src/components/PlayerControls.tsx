@@ -1,7 +1,16 @@
 import { colors } from '@/constants/tokens'
 import { FontAwesome6 } from '@expo/vector-icons'
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio'
-import { StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native'
+import { type ReactNode, useCallback, useState } from 'react'
+import { StyleSheet, TouchableOpacity, View, ViewStyle, type StyleProp } from 'react-native'
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
+
+// ─── Module-level constants ──────────────────────────────────────────────────
+
+const PRESS_SCALE = 0.88
+const PRESS_IN_DURATION = 100
+const PRESS_OUT_DURATION = 120
+const HIT_SLOP = 12
 
 type PlayerControlsProps = {
 	style?: ViewStyle
@@ -10,56 +19,109 @@ type PlayerControlsProps = {
 	onSkipToPrevious?: () => void
 }
 
-type PlayerButtonProps = {
-	style?: ViewStyle
+type PlayPauseButtonProps = {
+	style?: StyleProp<ViewStyle>
 	iconSize?: number
 	player: ReturnType<typeof useAudioPlayer>
+}
+
+type SkipButtonProps = {
+	style?: StyleProp<ViewStyle>
+	iconSize?: number
+}
+
+type SkipToNextButtonProps = SkipButtonProps & {
 	onSkipToNext?: () => void
+}
+
+type SkipToPreviousButtonProps = SkipButtonProps & {
 	onSkipToPrevious?: () => void
+}
+
+type ControlButtonProps = {
+	onPress?: () => void
+	style?: StyleProp<ViewStyle>
+	children: ReactNode
+}
+
+// ─── Stable sub-components ───────────────────────────────────────────────────
+
+const ControlButton = ({ onPress, style, children }: ControlButtonProps) => {
+	const [isPressed, setIsPressed] = useState(false)
+
+	const animatedStyle = useAnimatedStyle(() => ({
+		transform: [
+			{
+				scale: withTiming(isPressed ? PRESS_SCALE : 1, {
+					duration: isPressed ? PRESS_IN_DURATION : PRESS_OUT_DURATION,
+				}),
+			},
+		],
+	}))
+
+	const handlePressIn = useCallback(() => setIsPressed(true), [])
+	const handlePressOut = useCallback(() => setIsPressed(false), [])
+
+	return (
+		<TouchableOpacity
+			activeOpacity={0.85}
+			hitSlop={HIT_SLOP}
+			onPress={onPress}
+			onPressIn={handlePressIn}
+			onPressOut={handlePressOut}
+		>
+			<Animated.View style={[styles.controlButton, style, animatedStyle]}>
+				{children}
+			</Animated.View>
+		</TouchableOpacity>
+	)
 }
 
 export const PlayerControls = ({ style, player, onSkipToNext, onSkipToPrevious }: PlayerControlsProps) => {
 	return (
 		<View style={[styles.container, style]}>
 			<View style={styles.row}>
-				<SkipToPreviousButton player={player} onSkipToPrevious={onSkipToPrevious} />
+				<SkipToPreviousButton onSkipToPrevious={onSkipToPrevious} />
 
 				<PlayPauseButton player={player} />
 
-				<SkipToNextButton player={player} onSkipToNext={onSkipToNext} />
+				<SkipToNextButton onSkipToNext={onSkipToNext} />
 			</View>
 		</View>
 	)
 }
 
-export const PlayPauseButton = ({ style, iconSize = 48, player }: PlayerButtonProps) => {
+export const PlayPauseButton = ({ style, iconSize = 48, player }: PlayPauseButtonProps) => {
 	const status = useAudioPlayerStatus(player)
 
+	const handlePress = useCallback(() => {
+		if (status.playing) {
+			player.pause()
+		} else {
+			player.play()
+		}
+	}, [player, status.playing])
+
 	return (
-		<View style={[{ height: iconSize }, style]}>
-			<TouchableOpacity
-				activeOpacity={0.85}
-				onPress={status.playing ? player.pause : player.play}
-			>
-				<FontAwesome6 name={status.playing ? 'pause' : 'play'} size={iconSize} color={colors.text} />
-			</TouchableOpacity>
-		</View>
+		<ControlButton onPress={handlePress} style={[{ height: iconSize }, style]}>
+			<FontAwesome6 name={status.playing ? 'pause' : 'play'} size={iconSize} color={colors.text} />
+		</ControlButton>
 	)
 }
 
-export const SkipToNextButton = ({ iconSize = 30, onSkipToNext }: PlayerButtonProps) => {
+export const SkipToNextButton = ({ style, iconSize = 30, onSkipToNext }: SkipToNextButtonProps) => {
 	return (
-		<TouchableOpacity activeOpacity={0.7} onPress={onSkipToNext}>
+		<ControlButton onPress={onSkipToNext} style={style}>
 			<FontAwesome6 name="forward" size={iconSize} color={colors.text} />
-		</TouchableOpacity>
+		</ControlButton>
 	)
 }
 
-export const SkipToPreviousButton = ({ iconSize = 30, onSkipToPrevious }: PlayerButtonProps) => {
+export const SkipToPreviousButton = ({ style, iconSize = 30, onSkipToPrevious }: SkipToPreviousButtonProps) => {
 	return (
-		<TouchableOpacity activeOpacity={0.7} onPress={onSkipToPrevious}>
+		<ControlButton onPress={onSkipToPrevious} style={style}>
 			<FontAwesome6 name={'backward'} size={iconSize} color={colors.text} />
-		</TouchableOpacity>
+		</ControlButton>
 	)
 }
 
@@ -71,5 +133,9 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-evenly',
 		alignItems: 'center',
+	},
+	controlButton: {
+		alignItems: 'center',
+		justifyContent: 'center',
 	},
 })

@@ -13,10 +13,9 @@ type PlayerProgressBarProps = ViewProps & {
 export const PlayerProgressBar = ({ style, player }: PlayerProgressBarProps) => {
 	const status = useAudioPlayerStatus(player)
 
-	// expo-audio's status.duration may be in milliseconds on some platforms.
-	// See the caveat below before relying on this value directly.
+	// expo-audio reports both currentTime and duration in seconds.
 	const position = status.currentTime
-	const duration = status.duration / 1000
+	const duration = status.duration
 
 	const isSliding = useSharedValue(false)
 	const progress = useSharedValue(0)
@@ -24,7 +23,7 @@ export const PlayerProgressBar = ({ style, player }: PlayerProgressBarProps) => 
 	const max = useSharedValue(1)
 
 	const trackElapsedTime = formatSecondsToMinutes(position)
-	const trackRemainingTime = formatSecondsToMinutes(duration - position)
+	const trackRemainingTime = formatSecondsToMinutes(Math.max(0, duration - position))
 
 	if (!isSliding.value) {
 		progress.value = duration > 0 ? position / duration : 0
@@ -43,17 +42,21 @@ export const PlayerProgressBar = ({ style, player }: PlayerProgressBarProps) => 
 					minimumTrackTintColor: colors.minimumTrackTintColor,
 					maximumTrackTintColor: colors.maximumTrackTintColor,
 				}}
-				onSlidingStart={() => (isSliding.value = true)}
-				onValueChange={async (value) => {
+			onSlidingStart={() => (isSliding.value = true)}
+			onValueChange={async (value) => {
+				if (duration > 0) {
 					await player.seekTo(value * duration)
-				}}
-				onSlidingComplete={async (value) => {
-					if (!isSliding.value) return
+				}
+			}}
+			onSlidingComplete={async (value) => {
+				if (!isSliding.value) return
 
-					isSliding.value = false
+				isSliding.value = false
 
+				if (duration > 0) {
 					await player.seekTo(value * duration)
-				}}
+				}
+			}}
 			/>
 
 			<View style={styles.timeRow}>

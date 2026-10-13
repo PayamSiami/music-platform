@@ -1,7 +1,6 @@
 import { colors } from '@/constants/tokens'
 import { usePlayer } from '@/context/PlayerContext'
 import { Track } from '@/helpers/types'
-import { useQueue } from '@/store/queue'
 import { defaultStyles } from '@/styles'
 import { Ionicons } from '@expo/vector-icons'
 import { StyleSheet, Text, View, ViewProps } from 'react-native'
@@ -12,25 +11,15 @@ type QueueControlsProps = {
 } & ViewProps
 
 export const QueueControls = ({ tracks, style, ...viewProps }: QueueControlsProps) => {
-    const { player, setActiveIndex } = usePlayer()
-    const { setQueue } = useQueue()
-
-    const startQueue = (orderedTracks: Track[]) => {
-        // Store the queue order in Zustand, then jump to the first track.
-        // The PlayerProvider listens to activeIndex changes and calls
-        // player.replace() + player.play().
-        setQueue(orderedTracks)
-        setActiveIndex(0)
-        player.play()
-    }
+    const { playQueue } = usePlayer()
 
     const handlePlay = () => {
-        startQueue(tracks)
+        playQueue(tracks)
     }
 
     const handleShufflePlay = () => {
         const shuffledTracks = [...tracks].sort(() => Math.random() - 0.5)
-        startQueue(shuffledTracks)
+        playQueue(shuffledTracks)
     }
 
     return (

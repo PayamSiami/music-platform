@@ -1,14 +1,16 @@
 import { Track } from '@/helpers/types'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 export const useLastActiveTrack = (activeTrack: Track | null | undefined) => {
-  const [lastActiveTrack, setLastActiveTrack] = useState<Track | undefined>()
+  const [lastActiveTrack, setLastActiveTrack] = useState<Track | undefined>(
+    activeTrack ?? undefined,
+  )
 
-  useEffect(() => {
-    if (!activeTrack) return
-
+  // Adjusting state during render is the documented pattern for remembering
+  // information from previous renders.
+  if (activeTrack && activeTrack !== lastActiveTrack) {
     setLastActiveTrack(activeTrack)
-  }, [activeTrack])
+  }
 
   return lastActiveTrack
 }

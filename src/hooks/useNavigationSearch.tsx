@@ -31,7 +31,7 @@ export const useNavigationSearch = ({
         onChangeText: handleOnChangeText,
       },
     })
-  }, [navigation, handleOnChangeText, searchBarOptions]) // now safe because searchBarOptions is memoized
+  }, [navigation, handleOnChangeText, searchBarOptions])
 
   return search
 }

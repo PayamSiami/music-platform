@@ -1,18 +1,21 @@
 import { TracksList } from '@/components/TracksList'
-import { screenPadding } from '@/constants/tokens'
 import { trackTitleFilter } from '@/helpers/filter'
 import { generateTracksListId } from '@/helpers/miscellaneous'
 import { useNavigationSearch } from '@/hooks/useNavigationSearch'
 import { useFavorites } from '@/store/library'
 import { defaultStyles } from '@/styles'
 import { useMemo } from 'react'
-import { ScrollView, View } from 'react-native'
+import { View } from 'react-native'
+
+// ─── Module-level constants (created once, stable forever) ───────────────────
+
+const SEARCH_BAR_OPTIONS = {
+	placeholder: 'Find in songs',
+} as const
 
 const FavoritesScreen = () => {
 	const search = useNavigationSearch({
-		searchBarOptions: {
-			placeholder: 'Find in songs',
-		},
+		searchBarOptions: SEARCH_BAR_OPTIONS,
 	})
 
 	const favoritesTracks = useFavorites().favorites
@@ -25,16 +28,7 @@ const FavoritesScreen = () => {
 
 	return (
 		<View style={defaultStyles.container}>
-			<ScrollView
-				style={{ paddingHorizontal: screenPadding.horizontal }}
-				contentInsetAdjustmentBehavior="automatic"
-			>
-				<TracksList
-					id={generateTracksListId('favorites', search)}
-					scrollEnabled={false}
-					tracks={filteredFavoritesTracks}
-				/>
-			</ScrollView>
+			<TracksList id={generateTracksListId('favorites', search)} tracks={filteredFavoritesTracks} />
 		</View>
 	)
 }

@@ -5,9 +5,9 @@ import { colors, fontSize } from '@/constants/tokens'
 import { Track } from '@/helpers/types'
 import { defaultStyles } from '@/styles'
 import { Entypo, Ionicons } from '@expo/vector-icons'
-import { memo } from 'react'
+import { Image } from 'expo-image'
+import { memo, useCallback } from 'react'
 import { StyleSheet, Text, TouchableHighlight, View } from 'react-native'
-import FastImage from 'react-native-fast-image'
 import LoaderKit from 'react-native-loader-kit'
 
 export type TracksListItemProps = {
@@ -17,6 +17,18 @@ export type TracksListItemProps = {
   isPlaying?: boolean
 }
 
+// ─── Module-level constants ──────────────────────────────────────────────────
+
+const FALLBACK_ARTWORK = unknownTrackImageUri
+
+const TRACK_INFO_STYLE = {
+  flex: 1,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+} as const
+const TRACK_TEXT_CONTAINER_STYLE = { width: '100%' } as const
+
 export const TracksListItem = memo(
   ({
     track,
@@ -24,19 +36,31 @@ export const TracksListItem = memo(
     isActiveTrack = false,
     isPlaying = false,
   }: TracksListItemProps) => {
+    const handlePress = useCallback(() => {
+      handleTrackSelect(track)
+    }, [handleTrackSelect, track])
+
+    const artworkSource = track.artwork ?? FALLBACK_ARTWORK
+
+    const artworkStyle = {
+      ...styles.trackArtworkImage,
+      opacity: isActiveTrack ? 0.6 : 1,
+    }
+
+    const titleStyle = {
+      ...styles.trackTitleText,
+      color: isActiveTrack ? colors.primary : colors.text,
+    }
+
     return (
-      <TouchableHighlight onPress={() => handleTrackSelect(track)}>
+      <TouchableHighlight onPress={handlePress}>
         <View style={styles.trackItemContainer}>
           <View>
-            <FastImage
-              source={{
-                uri: track.artwork ?? unknownTrackImageUri,
-                priority: FastImage.priority.normal,
-              }}
-              style={{
-                ...styles.trackArtworkImage,
-                opacity: isActiveTrack ? 0.6 : 1,
-              }}
+            <Image
+              source={artworkSource}
+              style={artworkStyle}
+              contentFit="cover"
+              transition={200}
             />
 
             {isActiveTrack &&
@@ -56,23 +80,10 @@ export const TracksListItem = memo(
               ))}
           </View>
 
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
+          <View style={TRACK_INFO_STYLE}>
             {/* Track title + artist */}
-            <View style={{ width: '100%' }}>
-              <Text
-                numberOfLines={1}
-                style={{
-                  ...styles.trackTitleText,
-                  color: isActiveTrack ? colors.primary : colors.text,
-                }}
-              >
+            <View style={TRACK_TEXT_CONTAINER_STYLE}>
+              <Text numberOfLines={1} style={titleStyle}>
                 {track.title}
               </Text>
 
@@ -96,6 +107,8 @@ export const TracksListItem = memo(
 )
 
 TracksListItem.displayName = 'TracksListItem'
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   trackItemContainer: {

@@ -44,20 +44,29 @@ export const TrackShortcutsMenu = ({ track, children }: TrackShortcutsMenuProps)
             .otherwise(() => console.warn(`Unknown menu action ${id}`))
     }
 
+    const favoriteAction = {
+        id: isFavorite ? 'remove-from-favorites' : 'add-to-favorites',
+        title: isFavorite ? 'Remove from favorites' : 'Add to favorites',
+        // Note: `image` handling differs slightly between platforms.
+        image: Platform.select({
+            ios: 'star.fill', // SF Symbol name (works on iOS)
+            android: require('@/assets/unknown_artist.png'), // local image for Android
+        }),
+    }
+
+    const addToPlaylistAction = {
+        id: 'add-to-playlist',
+        title: 'Add to playlist',
+        image: Platform.select({
+            ios: 'plus', // SF Symbol name (works on iOS)
+            android: require('@/assets/unknown_artist.png'), // local image for Android
+        }),
+    }
+
     return (
         <MenuView
             onPressAction={({ nativeEvent: { event } }) => handlePressAction(event)}
-            actions={[
-                {
-                    id: 'add-to-favorites',
-                    title: 'Add to favorites',
-                    // Note: `image` handling differs slightly between platforms.
-                    image: Platform.select({
-                        ios: 'star.fill', // SF Symbol name (works on iOS)
-                        android: require('@/assets/unknown_artist.png'), // local image for Android
-                    }),
-                },
-            ]}
+            actions={[favoriteAction, addToPlaylistAction]}
         >
             {children}
         </MenuView>

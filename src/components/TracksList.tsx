@@ -1,13 +1,14 @@
 import { TracksListItem } from '@/components/TracksListItem'
 import { unknownTrackImageUri } from '@/constants/images'
+import { screenPadding } from '@/constants/tokens'
 import { usePlayer } from '@/context/PlayerContext'
 import { Track } from '@/helpers/types'
 import { useQueue } from '@/store/queue'
 import { utilsStyles } from '@/styles'
+import { Image } from 'expo-image'
 import { useAudioPlayerStatus } from 'expo-audio'
-import { useRef } from 'react'
+import { useCallback, useMemo } from 'react'
 import { FlatList, FlatListProps, Text, View } from 'react-native'
-import FastImage from 'react-native-fast-image'
 import { QueueControls } from './QueueControls'
 
 export type TracksListProps = Partial<FlatListProps<Track>> & {
@@ -16,9 +17,41 @@ export type TracksListProps = Partial<FlatListProps<Track>> & {
   hideQueueControls?: boolean
 }
 
-const ItemDivider = () => (
-  <View style={{ ...utilsStyles.itemSeparator, marginVertical: 9, marginLeft: 60 }} />
+// ─── Module-level constants ──────────────────────────────────────────────────
+
+const LIST_CONTENT_STYLE = {
+  paddingTop: 10,
+  paddingBottom: 128,
+  paddingHorizontal: screenPadding.horizontal,
+} as const
+
+const SEPARATOR_STYLE = {
+  ...utilsStyles.itemSeparator,
+  marginVertical: 9,
+  marginLeft: 60,
+}
+
+const QUEUE_CONTROLS_STYLE = { paddingBottom: 20 } as const
+
+const EMPTY_IMAGE_SOURCE = unknownTrackImageUri
+
+// ─── Stable sub-components ───────────────────────────────────────────────────
+
+const ItemDivider = () => <View style={SEPARATOR_STYLE} />
+
+const EmptyListComponent = () => (
+  <View>
+    <Text style={utilsStyles.emptyContentText}>No songs found</Text>
+    <Image
+      source={EMPTY_IMAGE_SOURCE}
+      style={utilsStyles.emptyContentImage}
+      contentFit="cover"
+      transition={200}
+    />
+  </View>
 )
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export const TracksList = ({
   id,
@@ -26,75 +59,66 @@ export const TracksList = ({
   hideQueueControls = false,
   ...flatlistProps
 }: TracksListProps) => {
-  const queueOffset = useRef(0)
-  const { activeQueueId, setActiveQueueId } = useQueue()
-  const { player, activeTrack, setActiveIndex } = usePlayer()
+  const { player, activeTrack, playQueue } = usePlayer()
+  const { setActiveQueueId } = useQueue()
   const status = useAudioPlayerStatus(player)
 
-  const handleTrackSelect = async (selectedTrack: Track) => {
-    const trackIndex = tracks.findIndex((track) => track.url === selectedTrack.url)
+  const handleTrackSelect = useCallback(
+    (selectedTrack: Track) => {
+      const trackIndex = tracks.findIndex((track) => track.url === selectedTrack.url)
 
-    if (trackIndex === -1) return
+      if (trackIndex === -1) return
 
-    const isChangingQueue = id !== activeQueueId
+      // Tapping the active track toggles play/pause instead of restarting it.
+      if (activeTrack?.url === selectedTrack.url) {
+        if (status.playing) {
+          player.pause()
+        } else {
+          player.play()
+        }
 
-    if (isChangingQueue) {
-      const beforeTracks = tracks.slice(0, trackIndex)
-      const afterTracks = tracks.slice(trackIndex + 1)
+        return
+      }
 
-      // expo-audio has no native queue. We build the queue in our own store
-      // and set the active index to the selected track. The PlayerProvider
-      // listens to activeIndex changes and calls player.replace() + play().
-      setActiveIndex(trackIndex)
-
-      // If your queue store keeps an ordered list of tracks per queue id,
-      // rebuild it here so skip-to-next/previous follows the same order
-      // the original RNTP code used (selected, after, before).
-      // Example:
-      // useQueue.getState().setQueue([selectedTrack, ...afterTracks, ...beforeTracks])
-
-      queueOffset.current = trackIndex
+      // The selected list becomes the active queue, starting at the tapped track.
       setActiveQueueId(id)
-    } else {
-      const nextTrackIndex =
-        trackIndex - queueOffset.current < 0
-          ? tracks.length + trackIndex - queueOffset.current
-          : trackIndex - queueOffset.current
+      playQueue(tracks, trackIndex)
+    },
+    [activeTrack?.url, id, playQueue, player, setActiveQueueId, status.playing, tracks],
+  )
 
-      setActiveIndex(nextTrackIndex)
-      player.play()
-    }
-  }
+  const renderItem = useCallback(
+    ({ item: track }: { item: Track }) => (
+      <TracksListItem
+        track={track}
+        onTrackSelect={handleTrackSelect}
+        isActiveTrack={activeTrack?.url === track.url}
+        isPlaying={status.playing}
+      />
+    ),
+    [handleTrackSelect, activeTrack?.url, status.playing],
+  )
+
+  const keyExtractor = useCallback((track: Track) => track.url, [])
+
+  const listHeader = useMemo(
+    () =>
+      !hideQueueControls ? (
+        <QueueControls tracks={tracks} style={QUEUE_CONTROLS_STYLE} />
+      ) : undefined,
+    [hideQueueControls, tracks],
+  )
 
   return (
     <FlatList
       data={tracks}
-      contentContainerStyle={{ paddingTop: 10, paddingBottom: 128 }}
-      ListHeaderComponent={
-        !hideQueueControls ? (
-          <QueueControls tracks={tracks} style={{ paddingBottom: 20 }} />
-        ) : undefined
-      }
+      contentContainerStyle={LIST_CONTENT_STYLE}
+      ListHeaderComponent={listHeader}
       ListFooterComponent={ItemDivider}
       ItemSeparatorComponent={ItemDivider}
-      ListEmptyComponent={
-        <View>
-          <Text style={utilsStyles.emptyContentText}>No songs found</Text>
-
-          <FastImage
-            source={{ uri: unknownTrackImageUri, priority: FastImage.priority.normal }}
-            style={utilsStyles.emptyContentImage}
-          />
-        </View>
-      }
-      renderItem={({ item: track }) => (
-        <TracksListItem
-          track={track}
-          onTrackSelect={handleTrackSelect}
-          isActiveTrack={activeTrack?.url === track.url}
-          isPlaying={status.playing}
-        />
-      )}
+      ListEmptyComponent={EmptyListComponent}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
       {...flatlistProps}
     />
   )
