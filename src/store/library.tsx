@@ -1,6 +1,8 @@
+
 import library from '@/assets/data/library.json'
 import { unknownTrackImageUri } from '@/constants/images'
 import { Artist, Playlist, Track, TrackWithPlaylist } from '@/helpers/types'
+import { useMemo } from 'react'
 import { create } from 'zustand'
 
 interface LibraryState {
@@ -11,6 +13,7 @@ interface LibraryState {
 
 export const useLibraryStore = create<LibraryState>()((set) => ({
     tracks: library,
+
     toggleTrackFavorite: (track) =>
         set((state) => ({
             tracks: state.tracks.map((currentTrack) => {
@@ -24,13 +27,17 @@ export const useLibraryStore = create<LibraryState>()((set) => ({
                 return currentTrack
             }),
         })),
+
     addToPlaylist: (track, playlistName) =>
         set((state) => ({
             tracks: state.tracks.map((currentTrack) => {
                 if (currentTrack.url === track.url) {
                     return {
                         ...currentTrack,
-                        playlist: [...(currentTrack.playlist ?? []), playlistName],
+                        playlist: [
+                            ...(currentTrack.playlist ?? []),
+                            playlistName,
+                        ],
                     }
                 }
 
@@ -39,11 +46,21 @@ export const useLibraryStore = create<LibraryState>()((set) => ({
         })),
 }))
 
-export const useTracks = () => useLibraryStore((state) => state.tracks)
+// Tracks
+export const useTracks = () =>
+    useLibraryStore((state) => state.tracks)
 
+// Favorites
 export const useFavorites = () => {
-    const favorites = useLibraryStore((state) => state.tracks.filter((track) => track.rating === 1))
-    const toggleTrackFavorite = useLibraryStore((state) => state.toggleTrackFavorite)
+    const tracks = useTracks()
+    const toggleTrackFavorite = useLibraryStore(
+        (state) => state.toggleTrackFavorite
+    )
+
+    const favorites = useMemo(
+        () => tracks.filter((track) => track.rating === 1),
+        [tracks]
+    )
 
     return {
         favorites,
@@ -51,29 +68,45 @@ export const useFavorites = () => {
     }
 }
 
-export const useArtists = () =>
-    useLibraryStore((state) => {
-        return state.tracks.reduce((acc, track) => {
-            const existingArtist = acc.find((artist) => artist.name === track.artist)
+// Artists
+export const useArtists = () => {
+    const tracks = useTracks()
+
+    return useMemo(() => {
+        return tracks.reduce((acc, track) => {
+            const artistName = track.artist ?? 'Unknown'
+
+            const existingArtist = acc.find(
+                (artist) => artist.name === artistName
+            )
 
             if (existingArtist) {
                 existingArtist.tracks.push(track)
             } else {
                 acc.push({
-                    name: track.artist ?? 'Unknown',
+                    name: artistName,
                     tracks: [track],
                 })
             }
 
             return acc
         }, [] as Artist[])
-    })
+    }, [tracks])
+}
 
+// Playlists
 export const usePlaylists = () => {
-    const playlists = useLibraryStore((state) => {
-        return state.tracks.reduce((acc, track) => {
+    const tracks = useTracks()
+    const addToPlaylist = useLibraryStore(
+        (state) => state.addToPlaylist
+    )
+
+    const playlists = useMemo(() => {
+        return tracks.reduce((acc, track) => {
             track.playlist?.forEach((playlistName) => {
-                const existingPlaylist = acc.find((playlist) => playlist.name === playlistName)
+                const existingPlaylist = acc.find(
+                    (playlist) => playlist.name === playlistName
+                )
 
                 if (existingPlaylist) {
                     existingPlaylist.tracks.push(track)
@@ -81,16 +114,18 @@ export const usePlaylists = () => {
                     acc.push({
                         name: playlistName,
                         tracks: [track],
-                        artworkPreview: track.artwork ?? unknownTrackImageUri,
+                        artworkPreview:
+                            track.artwork ?? unknownTrackImageUri,
                     })
                 }
             })
 
             return acc
         }, [] as Playlist[])
-    })
+    }, [tracks])
 
-    const addToPlaylist = useLibraryStore((state) => state.addToPlaylist)
-
-    return { playlists, addToPlaylist }
+    return {
+        playlists,
+        addToPlaylist,
+    }
 }
