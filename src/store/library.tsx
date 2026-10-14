@@ -9,6 +9,13 @@ interface LibraryState {
     tracks: TrackWithPlaylist[]
     toggleTrackFavorite: (track: Track) => void
     addToPlaylist: (track: Track, playlistName: string) => void
+    /**
+     * Replaces the bundled catalog with rows fetched from the API, keeping any
+     * locally favorited or playlisted tracks the API no longer returns.
+     */
+    setApiTracks: (apiTracks: Track[]) => void
+    /** Restores the bundled catalog — used on sign-out. */
+    resetLibrary: () => void
 }
 
 export const useLibraryStore = create<LibraryState>()((set) => ({
@@ -44,6 +51,20 @@ export const useLibraryStore = create<LibraryState>()((set) => ({
                 return currentTrack
             }),
         })),
+    setApiTracks: (apiTracks) =>
+        set((state) => {
+            const apiUrls = new Set(apiTracks.map((track) => track.url))
+
+            const keptLocalTracks = state.tracks.filter(
+                (track) =>
+                    (track.rating === 1 || (track.playlist?.length ?? 0) > 0) &&
+                    !apiUrls.has(track.url)
+            )
+
+            return { tracks: [...apiTracks, ...keptLocalTracks] }
+        }),
+
+    resetLibrary: () => set({ tracks: library }),
 }))
 
 // Tracks

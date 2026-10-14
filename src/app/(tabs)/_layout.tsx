@@ -1,87 +1,82 @@
-import { FloatingPlayer } from '@/components/FloatingPlayer'
-import { colors, fontSize } from '@/constants/tokens'
-import { FontAwesome, FontAwesome6, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
-import { BlurView } from 'expo-blur'
-import { Tabs } from 'expo-router'
-import { StyleSheet } from 'react-native'
+// app/_layout.js
+import { useApiMusicSync } from '@/hooks/useApiMusicSync';
+import { Feather } from '@expo/vector-icons';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import EvilIcons from '@expo/vector-icons/EvilIcons';
+import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-function TabBarBackground() {
-  return <BlurView intensity={95} style={styles.blur} />
-}
+export default function RootLayout() {
+  useApiMusicSync();
 
-export default function TabsNavigation() {
+  // ✅ Get the device's safe area insets (bottom nav bar height on Android, home indicator on iOS)
+  const insets = useSafeAreaInsets();
+
   return (
-    <>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: colors.primary,
-          tabBarLabelStyle: {
-            fontSize: fontSize.xs,
-            fontWeight: '500',
-          },
-          tabBarStyle: {
-            position: 'absolute',
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            borderTopWidth: 0,
-            paddingTop: 8,
-            backgroundColor: 'transparent',
-          },
-          tabBarBackground: TabBarBackground,
-        }}
-      >
-        <Tabs.Screen
-          name="(favorites)"
-          options={{
-            title: 'Favorites',
-            tabBarIcon: ({ color }) => <FontAwesome name="heart" size={20} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="(playlists)"
-          options={{
-            title: 'Playlists',
-            tabBarIcon: ({ color }) => (
-              <MaterialCommunityIcons name="playlist-play" size={28} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="(songs)"
-          options={{
-            title: 'Songs',
-            tabBarIcon: ({ color }) => (
-              <Ionicons name="musical-notes-sharp" size={24} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="(artists)"
-          options={{
-            title: 'Artists',
-            tabBarIcon: ({ color }) => <FontAwesome6 name="users-line" size={20} color={color} />,
-          }}
-        />
-      </Tabs>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#18181F',
+          borderTopWidth: 0,
 
-      <FloatingPlayer
-        style={{
+          // ✅ Height = base height + bottom safe area
+          height: 60 + insets.bottom,
+
+          // ✅ Padding bottom = space for icons + safe area
+          paddingBottom: 10 + insets.bottom,
+          paddingTop: 10,
+
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
           position: 'absolute',
-          left: 8,
-          right: 8,
-          bottom: 78,
+
+          // ✅ Push the tab bar above the phone's nav buttons
+          bottom: 0, // Keep at bottom of screen
+        },
+        tabBarActiveTintColor: '#FFF',
+        tabBarInactiveTintColor: '#666',
+        tabBarShowLabel: false,
+        tabBarItemStyle: {
+          justifyContent: 'center',
+        },
+      }}
+    >
+      {/* Home */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          tabBarIcon: ({ color }) => (
+            <AntDesign name="home" size={24} color={color} />
+          ),
         }}
       />
-    </>
-  )
-}
 
-const styles = StyleSheet.create({
-  blur: {
-    ...StyleSheet.absoluteFill,
-    overflow: 'hidden',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-})
+      {/* Profile */}
+      <Tabs.Screen
+        name="search"
+        options={{
+          tabBarIcon: ({ color }) => (
+            <EvilIcons name="search" size={24} color={color} />
+          ),
+        }}
+      />
+
+      {/* Library */}
+      <Tabs.Screen
+        name="library"
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Feather name="list" size={24} color={color} />
+          ),
+        }}
+      />
+
+      {/* ✅ Hide the auto-generated player tab */}
+      <Tabs.Screen
+        name="player"
+        options={{ href: null }}
+      />
+    </Tabs>
+  );
+}
