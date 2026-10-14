@@ -1,5 +1,7 @@
 // app/profile.tsx
 import { useApiStore } from '@/store/api';
+import { useAuthStore } from '@/store/auth';
+import { useLibraryStore } from '@/store/library';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
@@ -49,6 +51,8 @@ export default function ProfileScreen() {
     // --- User Data (with graceful fallbacks) ---
     const user = useApiStore((state) => state.user?.data);
     const resetApi = useApiStore((state) => state.reset);
+    const signOut = useAuthStore((state) => state.signOut);
+    const resetLibrary = useLibraryStore((state) => state.resetLibrary);
 
     const avatarUri = user?.profilePictureUrl ?? MOCK_AVATAR_URI;
     const userName = user?.username ?? MOCK_USER.name;
@@ -70,7 +74,12 @@ export default function ProfileScreen() {
                 {
                     text: 'Log out',
                     style: 'destructive',
-                    onPress: () => resetApi(),
+                    onPress: () => {
+                        signOut();
+                        resetApi();
+                        resetLibrary();
+                        router.replace('/login');
+                    },
                 },
             ]
         );

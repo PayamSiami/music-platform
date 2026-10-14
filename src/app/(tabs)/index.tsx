@@ -39,7 +39,7 @@ export default function HomeScreen() {
                 {/* Header */}
                 <View style={styles.header}>
                     {/* Wrap the profile button in a Link to navigate to /profile */}
-                    <Link href="/profile" asChild>
+                    <Link href="/login" asChild>
                         <TouchableOpacity style={styles.profileBtn}
 
                         >

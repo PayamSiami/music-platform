@@ -8,6 +8,7 @@
     "scheme": "musicapp",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "googleServicesFile": "./GoogleService-Info.plist",
       "icon": "./assets/expo.icon"
     },
     "android": {
@@ -18,13 +19,25 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.MusicApp"
+      "package": "com.divacastexpo",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "@react-native-firebase/app",
+        [
+          "expo-build-properties",
+          {
+            "ios": {
+              "useFrameworks": "dynamic"
+            }
+          }
+        ]
+      ],
       [
         "expo-audio",
         {
@@ -42,7 +55,8 @@
       ],
       "expo-image",
       "expo-asset",
-      "expo-status-bar"
+      "expo-status-bar",
+      "@react-native-firebase/app"
     ],
     "experiments": {
       "typedRoutes": true,
