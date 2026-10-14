@@ -44,7 +44,7 @@ const CONFIG_ERROR =
 let cachedApp: FirebaseApp | null = null;
 
 /** Initializes (once) and returns the app, or null when unconfigured. */
-function getFirebaseApp(): FirebaseApp | null {
+export function getFirebaseApp(): FirebaseApp | null {
   if (!isFirebaseConfigured) {
     if (__DEV__) console.warn(`[firebase] ${CONFIG_ERROR}`);
     return null;

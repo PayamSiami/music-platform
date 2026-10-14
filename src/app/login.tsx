@@ -44,12 +44,14 @@ export default function LoginScreen() {
       <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
         <KeyboardAvoidingView
           style={styles.flex}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
           <ScrollView
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
           >
             {/* Brand */}
             <View style={styles.brand}>
@@ -64,7 +66,7 @@ export default function LoginScreen() {
               <View style={styles.notice}>
                 <Feather name="alert-triangle" size={16} color="#F5A524" />
                 <Text style={styles.noticeText}>
-                  Firebase isn’t configured. Add the EXPO_PUBLIC_FIREBASE_* values to
+                  Firebase is not configured. Add the EXPO_PUBLIC_FIREBASE_* values to
                   your .env file.
                 </Text>
               </View>
@@ -86,6 +88,7 @@ export default function LoginScreen() {
                   keyboardType="email-address"
                   returnKeyType="next"
                   editable={!submitting}
+                  smartInsertDelete={false}
                 />
               </View>
             </View>
@@ -159,9 +162,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    justifyContent: "center",
     paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
 
   // Brand

@@ -58,11 +58,7 @@ export default function ProfileScreen() {
     const userName = user?.username ?? MOCK_USER.name;
     const userHandle = user?.username ? `@${user.username.toLowerCase()}` : MOCK_USER.handle;
     const userBio = user?.bio ?? MOCK_USER.bio;
-    const stats = {
-        playlists: user?.playlistsCount ?? MOCK_USER.stats.playlists,
-        rooms: user?.roomsCount ?? MOCK_USER.stats.rooms,
-        followers: user?.followersCount ?? MOCK_USER.stats.followers,
-    };
+    const stats = MOCK_USER.stats;
 
     // --- Handlers ---
     const handleLogout = () => {
@@ -288,7 +284,7 @@ const styles = StyleSheet.create({
     backgroundContainer: { position: 'absolute', top: 0, left: 0, right: 0, height: 220 },
     backgroundImage: { width: '100%', height: '100%', opacity: 0.6 },
     backgroundOverlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
         backgroundColor: 'rgba(10, 10, 15, 0.7)',
     },
 
