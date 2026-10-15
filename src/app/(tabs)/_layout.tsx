@@ -1,5 +1,3 @@
-// app/_layout.js
-import { useApiMusicSync } from '@/hooks/useApiMusicSync';
 import { Feather } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import EvilIcons from '@expo/vector-icons/EvilIcons';
@@ -7,8 +5,6 @@ import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function RootLayout() {
-  useApiMusicSync();
-
   // ✅ Get the device's safe area insets (bottom nav bar height on Android, home indicator on iOS)
   const insets = useSafeAreaInsets();
 

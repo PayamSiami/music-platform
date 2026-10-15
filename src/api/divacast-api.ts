@@ -25,6 +25,18 @@ export interface ListResponse<T> {
   page: PageMeta;
 }
 
+export type MusicWithSinger = {
+  title: string;
+  audioUrl: string;
+  duration: number;
+  albumArtUrl: string | null;
+  singer: {
+    username: string;
+    email: string;
+    isArtist: boolean;
+  };
+};
+
 export interface PageMeta {
   limit: number;
   offset: number;
@@ -52,15 +64,15 @@ export interface ErrorResponse {
 }
 
 export type ErrorCode =
-  | "validation_error"      // 400
-  | "unauthenticated"       // 401 — refresh the ID token and retry
-  | "forbidden"             // 403 — token is fine, the answer will not change
-  | "not_found"             // 404
-  | "method_not_allowed"    // 405
-  | "conflict"              // 409 — a unique value is taken
-  | "unprocessable_entity"  // 422 — referenced row missing, or delete blocked
-  | "internal_error"        // 500
-  | "service_unavailable";  // 503 — database unreachable
+  | "validation_error" // 400
+  | "unauthenticated" // 401 — refresh the ID token and retry
+  | "forbidden" // 403 — token is fine, the answer will not change
+  | "not_found" // 404
+  | "method_not_allowed" // 405
+  | "conflict" // 409 — a unique value is taken
+  | "unprocessable_entity" // 422 — referenced row missing, or delete blocked
+  | "internal_error" // 500
+  | "service_unavailable"; // 503 — database unreachable
 
 // ------------------------------------------------------------- list params
 
@@ -305,6 +317,7 @@ export interface UserSummary {
 // ------------------------------------------------------------------ client
 
 export const DIVACAST_BASE_URL =
+  process.env.EXPO_DIVACAST_BASE_URL ??
   "https://us-central1-divacast.cloudfunctions.net/divacast-api";
 
 /** Thrown for every non-2xx response, carrying the parsed error envelope. */
@@ -352,7 +365,8 @@ function queryString(params?: QueryParams): string {
   if (!params) return "";
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null) search.append(key, String(value));
+    if (value !== undefined && value !== null)
+      search.append(key, String(value));
   }
   const encoded = search.toString();
   return encoded ? `?${encoded}` : "";
@@ -422,9 +436,13 @@ export class DivacastClient {
   listMusic = (q?: PageQuery & { singerId?: string; q?: string }) =>
     this.request<ListResponse<MusicDetail>>("GET", "/v1/music", { query: q });
   getMusic = (id: string, expand: "singer" | "none" = "singer") =>
-    this.request<ItemResponse<MusicDetail | MusicOut>>("GET", `/v1/music/${id}`, {
-      query: { expand },
-    });
+    this.request<ItemResponse<MusicDetail | MusicOut>>(
+      "GET",
+      `/v1/music/${id}`,
+      {
+        query: { expand },
+      },
+    );
   createMusic = (body: MusicCreate) =>
     this.request<ItemResponse<MusicOut>>("POST", "/v1/music", { body });
   updateMusic = (id: string, body: MusicPatch) =>
@@ -451,7 +469,9 @@ export class DivacastClient {
   deletePost = (id: string) => this.request<void>("DELETE", `/v1/posts/${id}`);
 
   // -- follows -------------------------------------------------------------
-  listFollows = (q?: PageQuery & { followerId?: string; followedId?: string }) =>
+  listFollows = (
+    q?: PageQuery & { followerId?: string; followedId?: string },
+  ) =>
     this.request<ListResponse<FollowOut>>("GET", "/v1/follows", { query: q });
   getFollow = (followerId: string, followedId: string) =>
     this.request<ItemResponse<FollowOut>>(
@@ -475,11 +495,17 @@ export class DivacastClient {
     this.request<ItemResponse<EngagementOut>>("GET", `/v1/engagements/${id}`);
   /** commentText is required when type === "comment", forbidden otherwise. */
   createEngagement = (body: EngagementCreate) =>
-    this.request<ItemResponse<EngagementOut>>("POST", "/v1/engagements", { body });
-  updateEngagement = (id: string, body: EngagementPatch) =>
-    this.request<ItemResponse<EngagementOut>>("PATCH", `/v1/engagements/${id}`, {
+    this.request<ItemResponse<EngagementOut>>("POST", "/v1/engagements", {
       body,
     });
+  updateEngagement = (id: string, body: EngagementPatch) =>
+    this.request<ItemResponse<EngagementOut>>(
+      "PATCH",
+      `/v1/engagements/${id}`,
+      {
+        body,
+      },
+    );
   deleteEngagement = (id: string) =>
     this.request<void>("DELETE", `/v1/engagements/${id}`);
 
@@ -489,7 +515,10 @@ export class DivacastClient {
       query: q,
     });
   getArticleType = (id: string) =>
-    this.request<ItemResponse<ArticleTypeOut>>("GET", `/v1/article-types/${id}`);
+    this.request<ItemResponse<ArticleTypeOut>>(
+      "GET",
+      `/v1/article-types/${id}`,
+    );
   /** Admin only (the `admin` custom claim). Reads are open to any signed-in user. */
   createArticleType = (body: ArticleTypeCreate) =>
     this.request<ItemResponse<ArticleTypeOut>>("POST", "/v1/article-types", {
@@ -528,7 +557,9 @@ export class DivacastClient {
   createArticle = (body: ArticleCreate) =>
     this.request<ItemResponse<ArticleOut>>("POST", "/v1/articles", { body });
   updateArticle = (id: string, body: ArticlePatch) =>
-    this.request<ItemResponse<ArticleOut>>("PATCH", `/v1/articles/${id}`, { body });
+    this.request<ItemResponse<ArticleOut>>("PATCH", `/v1/articles/${id}`, {
+      body,
+    });
   deleteArticle = (id: string) =>
     this.request<void>("DELETE", `/v1/articles/${id}`);
 

@@ -1,4 +1,3 @@
-// app/login.tsx
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -31,11 +30,17 @@ export default function LoginScreen() {
   const error = useAuthStore((state) => state.error);
   const configured = useAuthStore((state) => state.configured);
 
-  const canSubmit = email.trim().length > 0 && password.length > 0 && !submitting;
+  const canSubmit =
+    email.trim().length > 0 &&
+    password.length > 0 &&
+    !submitting &&
+    configured;
 
   const onSubmit = async () => {
     if (!canSubmit) return;
-    const ok = await signIn(email, password);
+
+    const ok = await signIn(email.trim(), password);
+
     if (ok) router.replace("/");
   };
 
@@ -45,7 +50,7 @@ export default function LoginScreen() {
         <KeyboardAvoidingView
           style={styles.flex}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+          keyboardVerticalOffset={0}
         >
           <ScrollView
             contentContainerStyle={styles.content}
@@ -58,16 +63,24 @@ export default function LoginScreen() {
               <View style={styles.logo}>
                 <Feather name="music" size={28} color="#FFF" />
               </View>
+
               <Text style={styles.title}>Welcome back</Text>
-              <Text style={styles.subtitle}>Sign in to keep listening</Text>
+              <Text style={styles.subtitle}>
+                Sign in to keep listening
+              </Text>
             </View>
 
+            {/* Firebase Configuration Notice */}
             {!configured && (
               <View style={styles.notice}>
-                <Feather name="alert-triangle" size={16} color="#F5A524" />
+                <Feather
+                  name="alert-triangle"
+                  size={16}
+                  color="#F5A524"
+                />
                 <Text style={styles.noticeText}>
-                  Firebase is not configured. Add the EXPO_PUBLIC_FIREBASE_* values to
-                  your .env file.
+                  Firebase is not configured. Add the
+                  EXPO_PUBLIC_FIREBASE_* values to your .env file.
                 </Text>
               </View>
             )}
@@ -75,8 +88,15 @@ export default function LoginScreen() {
             {/* Email */}
             <View style={styles.field}>
               <Text style={styles.label}>Email</Text>
+
               <View style={styles.inputWrap}>
-                <Feather name="mail" size={18} color="#8A8A95" style={styles.inputIcon} />
+                <Feather
+                  name="mail"
+                  size={18}
+                  color="#8A8A95"
+                  style={styles.inputIcon}
+                />
+
                 <TextInput
                   style={styles.input}
                   value={email}
@@ -96,8 +116,15 @@ export default function LoginScreen() {
             {/* Password */}
             <View style={styles.field}>
               <Text style={styles.label}>Password</Text>
+
               <View style={styles.inputWrap}>
-                <Feather name="lock" size={18} color="#8A8A95" style={styles.inputIcon} />
+                <Feather
+                  name="lock"
+                  size={18}
+                  color="#8A8A95"
+                  style={styles.inputIcon}
+                />
+
                 <TextInput
                   style={[styles.input, styles.passwordInput]}
                   value={password}
@@ -111,27 +138,48 @@ export default function LoginScreen() {
                   onSubmitEditing={onSubmit}
                   editable={!submitting}
                 />
+
                 <Pressable
-                  onPress={() => setShowPassword((value) => !value)}
+                  onPress={() =>
+                    setShowPassword((value) => !value)
+                  }
                   hitSlop={10}
                   style={styles.eyeButton}
                   accessibilityRole="button"
-                  accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                  accessibilityLabel={
+                    showPassword ? "Hide password" : "Show password"
+                  }
                 >
-                  <Feather name={showPassword ? "eye-off" : "eye"} size={18} color="#8A8A95" />
+                  <Feather
+                    name={showPassword ? "eye-off" : "eye"}
+                    size={18}
+                    color="#8A8A95"
+                  />
                 </Pressable>
               </View>
             </View>
 
+            {/* Error */}
             {error && (
-              <View style={styles.error} accessibilityLiveRegion="polite">
-                <Feather name="alert-circle" size={16} color="#FF6B6B" />
+              <View
+                style={styles.error}
+                accessibilityLiveRegion="polite"
+              >
+                <Feather
+                  name="alert-circle"
+                  size={16}
+                  color="#FF6B6B"
+                />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             )}
 
+            {/* Sign In Button */}
             <Pressable
-              style={[styles.submit, !canSubmit && styles.submitDisabled]}
+              style={[
+                styles.submit,
+                !canSubmit && styles.submitDisabled,
+              ]}
               onPress={onSubmit}
               disabled={!canSubmit}
               accessibilityRole="button"
@@ -142,6 +190,22 @@ export default function LoginScreen() {
                 <Text style={styles.submitText}>Sign in</Text>
               )}
             </Pressable>
+
+            {/* Register Navigation */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                Don&apos;t have an account?
+              </Text>
+
+              <Pressable
+                onPress={() => router.push("/register")}
+                disabled={submitting}
+                hitSlop={8}
+                accessibilityRole="button"
+              >
+                <Text style={styles.registerLink}> Sign up</Text>
+              </Pressable>
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -275,6 +339,23 @@ const styles = StyleSheet.create({
   submitText: {
     color: "#FFF",
     fontSize: 16,
+    fontWeight: "600",
+  },
+
+  // Register Footer
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 26,
+  },
+  footerText: {
+    color: "#888",
+    fontSize: 14,
+  },
+  registerLink: {
+    color: "#A78BFA",
+    fontSize: 14,
     fontWeight: "600",
   },
 });

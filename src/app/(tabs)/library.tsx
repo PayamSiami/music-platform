@@ -1,8 +1,11 @@
+import type { MusicDetail } from '@/api/divacast-api';
+import { useApiStore, useMusic } from '@/store/api';
 import { Feather } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     FlatList,
     Image,
+    RefreshControl,
     StatusBar,
     StyleSheet,
     Text,
@@ -12,69 +15,44 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// --- Mock Data ---
-const SONGS_DATA = [
-  {
-    id: '1',
-    title: 'my future',
-    artist: 'Billie Eilish',
-    image: 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5646f?w=200',
-  },
-  {
-    id: '2',
-    title: 'Your Power',
-    artist: 'Billie Eilish',
-    image: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=200',
-  },
-  {
-    id: '3',
-    title: 'bellyache',
-    artist: 'Billie Eilish',
-    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200', // Changed for variety
-  },
-  {
-    id: '4',
-    title: 'everything i wanted',
-    artist: 'Billie Eilish',
-    image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=200',
-  },
-  {
-    id: '5',
-    title: 'lovely (with Khalid)',
-    artist: 'Billie Eilish, Khalid',
-    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200',
-  },
-  {
-    id: '6',
-    title: 'No Time To Die',
-    artist: 'Billie Eilish',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
-  },
-];
-
 export default function LibraryScreen() {
-  // Track which song is currently "playing" (active)
-  const [activeId, setActiveId] = useState('3'); // '3' is bellyache by default
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const music = useMusic();
+  console.log(music);
+  const fetchMusic = useApiStore((state) => state.fetchMusic);
+  console.log(fetchMusic);
 
-  const renderItem = ({ item }: { item: typeof SONGS_DATA[0] }) => {
+  useEffect(() => {
+    void fetchMusic({ limit: 50, sort: 'title', order: 'asc' });
+  }, [fetchMusic]);
+
+  const filteredMusic = music.items.filter((track) =>
+    `${track.title} ${track.singer.username}`.toLowerCase().includes(search.trim().toLowerCase()),
+  );
+
+  const renderItem = ({ item }: { item: MusicDetail }) => {
     const isActive = item.id === activeId;
 
     return (
       <TouchableOpacity
         style={[styles.songItem, isActive && styles.songItemActive]}
-        onPress={() => setActiveId(item.id)}
+        onPress={() => setActiveId(isActive ? null : item.id)}
         activeOpacity={0.7}
       >
-        {/* Album Art */}
-        <Image source={{ uri: item.image }} style={styles.albumArt} />
+        {item.albumArtUrl ? (
+          <Image source={{ uri: item.albumArtUrl }} style={styles.albumArt} />
+        ) : (
+          <View style={[styles.albumArt, styles.albumArtPlaceholder]}>
+            <Feather name="music" size={22} color="#888" />
+          </View>
+        )}
 
-        {/* Song Info */}
         <View style={styles.songInfo}>
           <Text style={styles.songTitle}>{item.title}</Text>
-          <Text style={styles.songArtist}>{item.artist}</Text>
+          <Text style={styles.songArtist}>{item.singer.username}</Text>
         </View>
 
-        {/* Actions (Play + Waveform) */}
         <View style={styles.actionsContainer}>
           <TouchableOpacity style={styles.actionBtn}>
             <Feather
@@ -110,9 +88,11 @@ export default function LibraryScreen() {
 
           <View style={styles.searchBar}>
             <TextInput
-              placeholder="Search"
+              placeholder="Search music"
               placeholderTextColor="#555"
               style={styles.searchInput}
+              value={search}
+              onChangeText={setSearch}
             />
           </View>
 
@@ -123,7 +103,7 @@ export default function LibraryScreen() {
 
         {/* Section Title */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Great title</Text>
+          <Text style={styles.sectionTitle}>Music</Text>
           <TouchableOpacity>
             <Text style={styles.sortByText}>sort by</Text>
           </TouchableOpacity>
@@ -131,11 +111,34 @@ export default function LibraryScreen() {
 
         {/* Song List */}
         <FlatList
-          data={SONGS_DATA}
+          data={filteredMusic}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={music.status === 'loading'}
+              onRefresh={() => void fetchMusic({ limit: 50, sort: 'title', order: 'asc' })}
+              tintColor="#FFF"
+            />
+          }
+          ListHeaderComponent={music.error ? (
+            <Text style={styles.errorText}>{music.error}</Text>
+          ) : null}
+          ListEmptyComponent={
+            music.status === 'loading' ? (
+              <Text style={styles.messageText}>Loading music...</Text>
+            ) : music.status === 'error' ? (
+              <TouchableOpacity onPress={() => void fetchMusic()}>
+                <Text style={styles.messageText}>Could not load music. Tap to retry.</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.messageText}>
+                {search ? 'No music matches your search.' : 'No music available yet.'}
+              </Text>
+            )
+          }
         />
 
       </SafeAreaView>
@@ -222,6 +225,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 15,
   },
+  albumArtPlaceholder: {
+    backgroundColor: '#1A1A24',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   songInfo: {
     flex: 1,
   },
@@ -242,5 +250,17 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     padding: 5,
+  },
+  errorText: {
+    color: '#FF8A8A',
+    fontSize: 13,
+    paddingHorizontal: 10,
+    paddingBottom: 12,
+  },
+  messageText: {
+    color: '#888',
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 24,
   },
 });

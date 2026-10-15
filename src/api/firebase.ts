@@ -16,10 +16,11 @@
 
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import {
+  createUserWithEmailAndPassword,
+  signOut as firebaseSignOut,
   getAuth,
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  signOut as firebaseSignOut,
   type Auth,
   type User,
 } from "firebase/auth";
@@ -35,7 +36,9 @@ const firebaseConfig = {
 
 /** True once every required config value is present. */
 export const isFirebaseConfigured = Boolean(
-  firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId,
+  firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId,
 );
 
 const CONFIG_ERROR =
@@ -89,6 +92,13 @@ export async function getIdToken(): Promise<string | null> {
   const auth = getFirebaseAuth();
   if (!auth?.currentUser) return null;
   return auth.currentUser.getIdToken();
+}
+
+export function signUpWithFirebase(email: string, password: string) {
+  const auth = getFirebaseAuth();
+  if (!auth) return Promise.reject(new Error(CONFIG_ERROR));
+
+  return createUserWithEmailAndPassword(auth, email, password);
 }
 
 // Wire the divacast client up to Firebase tokens.

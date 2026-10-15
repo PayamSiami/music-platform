@@ -51,7 +51,7 @@ const STREAM_SEARCHES = [
 ];
 
 export default function SearchScreen() {
-  const [searchQuery, setSearchQuery] = useState('Billie');
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<Filter>('Release');
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<TextInput>(null);
